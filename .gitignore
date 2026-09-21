@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# 测量输出（原始数据与图可由脚本重新生成，默认不入库）
+results/
+*.csv
+!requirements*.csv
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 临时文件
+*.log
+*.tmp
+~$*
