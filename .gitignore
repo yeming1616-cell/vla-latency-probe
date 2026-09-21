@@ -11,6 +11,8 @@ env/
 results/
 *.csv
 !requirements*.csv
+# 例外：明确标注为合成的示例数据保留入库
+!examples/demo/*.csv
 
 # 编辑器 / 系统
 .vscode/

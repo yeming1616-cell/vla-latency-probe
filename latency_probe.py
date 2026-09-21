@@ -40,6 +40,7 @@ import csv
 import importlib
 import math
 import os
+import random
 import statistics
 import sys
 import time
@@ -49,13 +50,20 @@ import time
 # 被测对象
 # --------------------------------------------------------------------------
 
-def _dummy_callable(work_ms: float):
-    """返回一个消耗近似 work_ms 毫秒的合成调用，用于验证测量链路。"""
-    target = work_ms / 1000.0
+def _dummy_callable(work_ms: float, jitter: float, seed: int):
+    """返回一个合成调用，用于验证测量链路。
+
+    每次调用的目标耗时在 work_ms * (1 ± jitter) 之间均匀抖动，
+    以模拟真实推理中由显存分配、内核调度、批大小变化等引入的波动。
+    固定 seed 时结果可复现。
+    """
+    rng = random.Random(seed)
 
     def _step():
+        target_ms = work_ms * (1.0 + rng.uniform(-jitter, jitter))
+        target = max(target_ms, 0.01) / 1000.0
         t0 = time.perf_counter()
-        # 用一个纯计算循环消耗时间，避免依赖 sleep 的调度粒度
+        # 用纯计算循环消耗时间，避免依赖 sleep 的调度粒度
         acc = 0.0
         i = 0
         while time.perf_counter() - t0 < target:
@@ -172,6 +180,14 @@ def main(argv=None):
         "--dummy-ms", type=float, default=8.0,
         help="dummy 模式每次调用的目标耗时（毫秒，默认 8）",
     )
+    ap.add_argument(
+        "--jitter", type=float, default=0.45,
+        help="dummy 模式耗时的相对抖动幅度，0~1（默认 0.45）",
+    )
+    ap.add_argument(
+        "--seed", type=int, default=20260922,
+        help="dummy 模式随机种子，保证可复现（默认固定值）",
+    )
     ap.add_argument("--out", default="", help="输出目录；给出则写 CSV")
     ap.add_argument("--label", default="", help="写入 CSV 的标签，便于对比不同配置")
     args = ap.parse_args(argv)
@@ -179,11 +195,14 @@ def main(argv=None):
     if args.runs < 1:
         print("错误：--runs 必须 >= 1", file=sys.stderr)
         return 2
+    if not 0.0 <= args.jitter < 1.0:
+        print("错误：--jitter 必须在 [0, 1) 区间内", file=sys.stderr)
+        return 2
 
     # 构造被测对象
     if args.model == "dummy":
-        step = _dummy_callable(args.dummy_ms)
-        label = args.label or ("dummy-%.1fms" % args.dummy_ms)
+        step = _dummy_callable(args.dummy_ms, args.jitter, args.seed)
+        label = args.label or ("dummy-%.1fms-j%.2f" % (args.dummy_ms, args.jitter))
     elif args.model.startswith("plugin:"):
         step = load_plugin(args.model)
         label = args.label or args.model

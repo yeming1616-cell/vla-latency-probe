@@ -75,8 +75,8 @@ def build_svg(vals, label, bins, width, height):
         counts[idx] += 1
     cmax = max(counts) if counts else 1
 
-    # 画布
-    ml, mr, mt, mb = 70, 24, 46, 62
+    # 画布（上边距留够，避免分位数标签与统计行重叠）
+    ml, mr, mt, mb = 70, 24, 64, 62
     pw = width - ml - mr
     ph = height - mt - mb
 
@@ -150,7 +150,7 @@ def build_svg(vals, label, bins, width, height):
                  'stroke-width="1.4" stroke-dasharray="5 3"/>'
                  % (xx, mt, xx, mt + ph, color))
         o.append('<text x="%.2f" y="%d" font-size="10.5" fill="%s" text-anchor="middle">'
-                 '%s</text>' % (xx, mt - 6, color, name))
+                 '%s</text>' % (xx, mt - 7, color, name))
 
     o.append('</svg>')
     return "\n".join(o), p50, p95, p99, mean, std
