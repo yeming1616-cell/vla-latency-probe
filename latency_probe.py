@@ -138,6 +138,10 @@ def summarize(latencies_ms, gaps_ms):
 
 
 def print_summary(s, label):
+    def fmt(v):
+        """nan 表示样本不足（例如只有一次调用时不存在调用间隔），显示为破折号。"""
+        return "       —" if isinstance(v, float) and math.isnan(v) else "%8.3f" % v
+
     print("")
     print("=" * 58)
     print("  延迟统计  (%s)" % label)
@@ -150,9 +154,11 @@ def print_summary(s, label):
     print("                    p95      = %8.3f ms" % s["p95_ms"])
     print("                    p99      = %8.3f ms" % s["p99_ms"])
     print("  ------------------------------------------------------------")
-    print("  调用间隔均值      gap_mean = %8.3f ms" % s["gap_mean_ms"])
-    print("  调用间隔标准差    gap_std  = %8.3f ms   <-- 抖动指标" % s["gap_std_ms"])
-    print("  调用间隔最大      gap_max  = %8.3f ms" % s["gap_max_ms"])
+    print("  调用间隔均值      gap_mean = %s ms" % fmt(s["gap_mean_ms"]))
+    print("  调用间隔标准差    gap_std  = %s ms   <-- 抖动指标" % fmt(s["gap_std_ms"]))
+    print("  调用间隔最大      gap_max  = %s ms" % fmt(s["gap_max_ms"]))
+    if math.isnan(s["gap_mean_ms"]):
+        print("  （样本数 < 2，无法计算调用间隔）")
     print("=" * 58)
     print("")
     print("  提示：控制质量通常受 *尾部* 影响更大，请优先关注 p95 / p99")
